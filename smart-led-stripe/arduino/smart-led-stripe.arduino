@@ -1,0 +1,378 @@
+#include <SoftwareSerial.h>
+
+const int redPin = 3;
+const int greenPin = 5;
+const int bluePin = 6;
+
+int redInt=0,greenInt=0,blueInt=0;
+
+String inputString = "";
+String nullString = "";
+String prefixString = "";
+String sufixString = "";
+
+
+void setup() {
+
+  Serial.begin(9600);
+
+  pinMode(redPin, OUTPUT); 
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT); 
+  inputString.reserve(200);
+  prefixString.reserve(10);
+  sufixString.reserve(20);
+}
+
+void loop() {
+
+  if (inputString == nullString) dynamicRGB(5000,255);
+  else pretvorba();
+
+    delay(100);
+}
+
+void serialEvent() {
+  inputString=nullString;
+  while (Serial.available() > 0) {
+    char inChar = (char)Serial.read();
+    inputString += inChar;
+    if (inChar == '\n') break; 
+  }
+}
+
+void pretvorba(){
+int z1=0,z2=0;
+
+
+  //priprema za razdvajanje
+  z1 = inputString.indexOf(';');
+  z2 = inputString.length();
+
+  //razdvajanje
+  prefixString = inputString.substring(0,z1);
+  sufixString = inputString.substring(z1+1,z2);
+
+  if (prefixString == "static"){
+    
+  int z1=0,z2=0,z3=0;
+
+  String redString = "";
+  String greenString = ""; //stringovi
+  String blueString = "";
+  redString.reserve(10);
+  greenString.reserve(10); // i njihove rezerve 
+  blueString.reserve(10);
+
+  char redChar[4], greenChar[4], blueChar[4]; 
+
+  z1 = sufixString.indexOf(',');
+  z2 = sufixString.lastIndexOf(',');
+  z3 = sufixString.lastIndexOf(';');
+
+  redString = sufixString.substring(0,z1); redString.toCharArray(redChar, 4); redInt = atoi(redChar);   //isjeca vrijednost crvenog iz stringa, pretvara ga u char array i iztoga pretvara int variablu
+  greenString = sufixString.substring(z1+1,z2); greenString.toCharArray(greenChar, 4); greenInt = atoi(greenChar);   //tako za svaku boju
+  blueString = sufixString.substring(z2+1,z3); blueString.toCharArray(blueChar, 4); blueInt = atoi(blueChar);
+
+
+
+  staticRGB(redInt,greenInt,blueInt);
+}
+
+ if (prefixString == "dynamic"){  
+  
+  int z1=0,z2=0;
+  int FADESPEED = 10;
+  int Brightness = 100;
+  
+  String FADESPEEDString = "";
+  String BrightnessString = "";
+  FADESPEEDString.reserve(10);
+  BrightnessString.reserve(10);
+  
+  char FADESPEEDChar[10], BrightnessChar[4];
+
+  z1 = sufixString.indexOf(',');
+  z2 = sufixString.lastIndexOf(';');
+
+  
+  FADESPEEDString = sufixString.substring(0,z1); FADESPEEDString.toCharArray(FADESPEEDChar, 10); FADESPEED = atoi(FADESPEEDChar);
+  BrightnessString = sufixString.substring(z1+1,z2); BrightnessString.toCharArray(BrightnessChar, 4); Brightness = atoi(BrightnessChar);
+
+  dynamicRGB(FADESPEED, Brightness);
+
+ }
+ 
+if (prefixString == "pulse"){
+  
+  int z1=0,z2=0,z3=0;
+  int pulsN0;
+  int FADESPEED = 10;
+  int Brightness = 100;
+  String pulsN0String = "";
+  String FADESPEEDString = "";
+  String BrightnessString = "";
+  pulsN0String.reserve(10);
+  FADESPEEDString.reserve(10);
+  BrightnessString.reserve(10);
+  
+  char pulsN0Char[4], FADESPEEDChar[10], BrightnessChar[4];
+  
+  z1 = sufixString.indexOf(',');
+  z2 = sufixString.lastIndexOf(',');
+  z3 = sufixString.lastIndexOf(';');
+  
+  pulsN0String = sufixString.substring(0,z1); pulsN0String.toCharArray(pulsN0Char, 4); pulsN0 = atoi(pulsN0Char);
+  FADESPEEDString = sufixString.substring(z1+1,z2); FADESPEEDString.toCharArray(FADESPEEDChar, 10); FADESPEED = atoi(FADESPEEDChar);
+  BrightnessString = sufixString.substring(z2+1,z3); BrightnessString.toCharArray(BrightnessChar, 4); Brightness = atoi(BrightnessChar);
+  
+  pulse(pulsN0,FADESPEED,Brightness);
+  
+}
+}
+
+void dynamicRGB(int fs, int b)
+{
+  int a;
+  
+  while(redInt +  greenInt  + blueInt != 0){ //fade out
+    
+  if(redInt != 0) redInt--;
+  
+  if(greenInt != 0) greenInt--;
+  
+  if(blueInt != 0) blueInt--;
+  
+  analogWrite(redPin, redInt);
+  analogWrite(greenPin, greenInt);
+  analogWrite(bluePin, blueInt);
+  
+   delayMicroseconds(fs);
+  
+  }
+  
+  
+  delay(100);
+  
+  for (a = 0; a < b+1; a++) { 
+    if (Serial.available() > 0) break;
+    analogWrite(redPin, a);
+     delayMicroseconds(fs);
+  } 
+  
+  while (1){// beskonačna petlja
+ 
+  // plava ++
+  for (a = 0; a < b+1; a++) {
+   if (Serial.available() > 0) break; 
+    analogWrite(bluePin, a);
+     delayMicroseconds(fs);
+  } 
+if (Serial.available() > 0) break;
+  //crvena --
+  for (a = b; a > 0; a--) { 
+    if (Serial.available() > 0) break;
+    analogWrite(redPin, a);
+     delayMicroseconds(fs);
+  } 
+if (Serial.available() > 0) break;
+  // zelena ++
+  for (a = 0; a < b+1; a++) { 
+    if (Serial.available() > 0) break;
+    analogWrite(greenPin, a);
+     delayMicroseconds(fs);
+  } 
+if (Serial.available() > 0) break;
+  //plava --
+  for (a = b; a > 0; a--) { 
+    if (Serial.available() > 0) break;
+    analogWrite(bluePin, a);
+     delayMicroseconds(fs);
+  } 
+if (Serial.available() > 0) break;
+  //crvena ++
+  for (a = 0; a < b+1; a++) { 
+    if (Serial.available() > 0) break;
+    analogWrite(redPin, a);
+     delayMicroseconds(fs);
+  } 
+if (Serial.available() > 0) break;
+  //zelena --
+  for (a = b; a > 0; a--) { 
+    if (Serial.available() > 0) break;
+    analogWrite(greenPin, a);
+     delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break; 
+  }
+}
+
+void staticRGB(int a, int b, int c)
+{
+  
+  int redInt=a, greenInt=b, blueInt=c;
+  
+  while(redInt +  greenInt  + blueInt != 0){ //fade out
+    
+  if(redInt != 0) redInt--;
+  
+  if(greenInt != 0) greenInt--;
+  
+  if(blueInt != 0) blueInt--;
+  
+  analogWrite(redPin, redInt);
+  analogWrite(greenPin, greenInt);
+  analogWrite(bluePin, blueInt);
+  
+  delayMicroseconds(1000);
+  
+  }
+  
+  analogWrite(redPin, 0);
+  analogWrite(greenPin, 0);
+  analogWrite(bluePin, 0);
+  
+  while(1) {
+  if(Serial.available() > 0) break;
+  }
+}
+
+void pulse(int p,int fs, int b){
+  int a=0,bp=0;
+  
+
+  do{
+if (Serial.available() > 0) break;
+  bp++;
+  for (a = 0; a < b+1; a++) {
+if (Serial.available() > 0) break;
+    analogWrite(redPin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+  for (a = b; a > 0; a--) { 
+if (Serial.available() > 0) break;  
+    analogWrite(redPin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+}while(bp<p);bp=0;
+
+
+  do{
+if (Serial.available() > 0) break;
+  bp++;
+  for (a = 0; a < b+1; a++) {
+if (Serial.available() > 0) break;
+    analogWrite(redPin, a);
+    analogWrite(bluePin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+  for (a = b; a > 0; a--) { 
+if (Serial.available() > 0) break;  
+    analogWrite(redPin, a);
+    analogWrite(bluePin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+}while(bp<p);bp=0;
+
+
+  do{
+if (Serial.available() > 0) break;
+  bp++;
+  for (a = 0; a < b+1; a++) {
+if (Serial.available() > 0) break;
+    analogWrite(bluePin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+  for (a = b; a > 0; a--) { 
+if (Serial.available() > 0) break;  
+    analogWrite(bluePin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+}while(bp<p);bp=0;
+
+
+  do{
+if (Serial.available() > 0) break;
+  bp++;
+  for (a = 0; a < b+1; a++) {
+if (Serial.available() > 0) break;
+    analogWrite(bluePin, a);
+    analogWrite(greenPin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+  for (a = b; a > 0; a--) { 
+if (Serial.available() > 0) break;  
+    analogWrite(bluePin, a);
+    analogWrite(greenPin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+}while(bp<p);bp=0;
+
+  do{
+if (Serial.available() > 0) break;
+  bp++;
+  for (a = 0; a < b+1; a++) {
+if (Serial.available() > 0) break;
+    analogWrite(greenPin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+  for (a = b; a > 0; a--) { 
+if (Serial.available() > 0) break;  
+    analogWrite(greenPin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+}while(bp<p);bp=0;
+
+
+  do{
+if (Serial.available() > 0) break;
+  bp++;
+  for (a = 0; a < b+1; a++) {
+if (Serial.available() > 0) break; 
+    analogWrite(greenPin, a);
+    analogWrite(redPin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+  for (a = b; a > 0; a--) { 
+if (Serial.available() > 0) break;  
+    analogWrite(greenPin, a);
+    analogWrite(redPin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+}while(bp<p);bp=0;
+
+
+  do{
+if (Serial.available() > 0) break;
+  bp++;
+  for (a = 0; a < b+1; a++) {
+if (Serial.available() > 0) break; 
+    analogWrite(greenPin, a);
+    analogWrite(redPin, a);
+    analogWrite(bluePin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+  for (a = b; a > 0; a--) { 
+if (Serial.available() > 0) break;  
+    analogWrite(greenPin, a);
+    analogWrite(redPin, a);
+    analogWrite(bluePin, a);
+    delayMicroseconds(fs);
+  }
+if (Serial.available() > 0) break;
+}while(bp<p);bp=0;
+
+}
